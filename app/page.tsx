@@ -1,97 +1,100 @@
-import Image from "next/image";
-import styles from "./page.module.css";
+"use client";
+import React from "react";
+import { useCollaborativeSessionContext } from "@/lib/context/CollaborativeSessionContext";
+import PresenceList from "@/components/PresenceList";
+import SharedCounter from "@/components/SharedCounter";
+import ChatPanel from "@/components/ChatPanel";
+import { Button } from "@/components/ui/button";
+import { Sun, Moon } from "lucide-react";
+import ActivityFeed from "@/components/ActivityFeed";
 
 export default function Home() {
+  const {
+    loading,
+    users,
+    messages,
+    counter,
+    typingUsers,
+    theme,
+    currentUser,
+    sendMessage,
+    deleteMessage,
+    updateCounter,
+    markTyping,
+    toggleTheme,
+    feed,
+    focus,
+    updateFocus,
+  } = useCollaborativeSessionContext();
+
   return (
-    <div className={styles.page}>
-      <h1>Home</h1>
-
-      <main className={styles.main}>
-        <Image
-          className={styles.logo}
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol>
-          <li>
-            Get started by editing <code>app/page.tsx</code>.
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
-
-        <div className={styles.ctas}>
-          <a
-            className={styles.primary}
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/30">
+      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+        <header className="mb-8 flex items-center justify-between gap-4 rounded-2xl border border-border/50 bg-card/80 p-6 shadow-xl shadow-black/5 backdrop-blur-sm">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">Collaboration Dashboard</h1>
+            <p className="mt-1 text-sm text-muted-foreground">Real-time collaboration across browser tabs</p>
+          </div>
+          <Button
+            onClick={toggleTheme}
+            type="button"
+            aria-label="Switch theme"
+            aria-pressed={theme === "dark"}
+            title="Switch theme"
+            variant="outline"
+            size="default"
+            className="flex items-center gap-2 rounded-lg border border-border/50 bg-muted/50 px-3 py-2 text-sm font-medium hover:bg-muted/70 transition-colors"
           >
-            <Image
-              className={styles.logo}
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-            className={styles.secondary}
-          >
-            Read our docs
-          </a>
-        </div>
-      </main>
-      <footer className={styles.footer}>
-        <a
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+            {theme === "light" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+            <span className="hidden sm:inline">{theme === "light" ? "Light" : "Dark"}</span>
+            <span className="sr-only">Toggle theme</span>
+          </Button>
+        </header>
+
+        {loading ? (
+          <div className="flex h-96 items-center justify-center">
+            <div className="text-center">
+              <div className="mx-auto mb-4 h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
+              <p className="text-lg text-muted-foreground">Loading session…</p>
+            </div>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+            <div className="flex flex-col gap-6 lg:col-span-1">
+              <PresenceList users={users} currentUserId={currentUser.userId} />
+              <SharedCounter counter={counter} onChangeAction={updateCounter} />
+            </div>
+            <div className="lg:col-span-2">
+              <ChatPanel
+                messages={messages}
+                currentUserId={currentUser.userId}
+                typingUsers={typingUsers}
+                onSendAction={sendMessage}
+                onDeleteAction={deleteMessage}
+                onTypingAction={markTyping}
+                onFocusUpdateAction={updateFocus}
+              />
+              <div className="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <ActivityFeed items={feed} />
+                <div className="rounded-xl border border-border/50 p-4">
+                  <h3 className="mb-2 text-sm font-semibold">Focus Indicators</h3>
+                  <ul className="space-y-2 text-xs">
+                    {Object.entries(focus).filter(([uid]) => uid !== currentUser.userId).map(([uid, f]) => (
+                      <li key={uid} className="flex items-center gap-2">
+                        <span className="h-2 w-2 rounded-full bg-primary" />
+                        <span>{users.find(u => u.userId === uid)?.username ?? uid} focusing {f.element}{typeof f.cursorPos === 'number' ? ` @${f.cursorPos}` : ''}</span>
+                      </li>
+                    ))}
+                    {Object.entries(focus).filter(([uid]) => uid !== currentUser.userId).length === 0 && (
+                      <li className="text-muted-foreground">No other user focus</li>
+                    )}
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

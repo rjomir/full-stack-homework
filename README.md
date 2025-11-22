@@ -1,91 +1,64 @@
-# React Developer Assignment: Cross-Tab Collaboration Dashboard
+# Cross‑Tab Collaboration Dashboard
 
-## Time Limit: 3 hours
+Simple Next.js demo that syncs presence, a shared counter, chat (typing + delete‑own + expiration), and theme across browser tabs using `react-broadcast-sync`.
 
-You are expected to focus on the core requirements. Bonus features are optional and may be partially implemented if time allows.
-
-## Overview
-
-Build a real-time collaboration dashboard that synchronizes user activity across multiple browser tabs using the  
-<a href="https://www.npmjs.com/package/react-broadcast-sync" target="_blank" rel="noopener noreferrer">react-broadcast-sync</a> library.
+Open this page in multiple tabs to try it.
 
 ---
 
-## Setup Instructions
+## Quick start
 
-1. Create a new React project using any setup you prefer (e.g., Vite, CRA, Next.js)
-2. Install the required package:
-   ```bash
-   npm install react-broadcast-sync
-   ```
-3. Use any styling approach (CSS, Tailwind, MUI, etc.)
+1) Install and run
+```bash
+pnpm install
+pnpm dev
+# then open http://localhost:3000
+```
 
----
-
-## Requirements - Mandatory
-
-### 1. Custom Hook
-Create a custom hook called `useCollaborativeSession` that:
-- Sets up the broadcast channel
-- Manages internal state for users, chat, counter
-- Exposes state and actions:
-  - `users`, `messages`, `counter`
-  - `sendMessage()`, `updateCounter()`, `markTyping()`, etc.
-- Internally uses `react-broadcast-sync` to handle cross-tab communication
-
-### 2. User Presence System
-- Detect and display active users (based on tabs)
-- Show a user list with:
-  - Username or ID (you can generate random names if needed)
-  - Last activity timestamp
-- Detect and visually indicate when a user joins or leaves
-
-### 3. Shared Counter
-- Counter that stays synchronized across all tabs
-- Any user can increment/decrement the value
-- Show which user performed the last action
-- Display timestamp of last action
-  
-### 4. Real-time Chat
-- Text area for message writing
-- Show typing indicators when users are actively typing
-- Synchronize conversation content across all tabs
-- For each message display which user sent it and its timestamp
-- Allow users to delete **their own** messages from the chat with syncing across tabs
-- Allow users to send a messages with expiration
-
-### 5. Technical Standards
-- Use proper error handling and cleanup
-- Use TypeScript or well-typed PropTypes
-- Abstract logic into reusable components/hooks
-- Keep the code modular, readable, and clean
-- Synchronize existing state on page load (rehydrate from current messages/users)
+2) Optional: install the library directly (already listed in dependencies)
+```bash
+pnpm add react-broadcast-sync
+```
 
 ---
 
-## Bonus Features
-- Theme sync across tabs (light/dark mode)
-- Include debouncing for frequent updates
-- Implement loading states
-- Add responsive layout
-- Activity feed showing recent actions
-- User avatar system
-- Focus/cursor position indicators
+## What’s inside
+
+- Custom hook `useCollaborativeSession`
+  - Uses `useBroadcastChannel('collab-dashboard')` from `react-broadcast-sync`
+  - Presence: per‑tab join/leave + lastActive
+  - Chat: send, delete own, timestamps, optional expiration, typing indicators (debounced)
+  - Counter: synced value + last actor and time
+  - Rehydration: new tab requests snapshot, existing tabs respond; merge is deterministic
+  - Theme sync (bonus): toggled theme broadcasts to all tabs
+
+- Components
+  - `PresenceList` – active users with last seen
+  - `SharedCounter` – inc/dec + last action
+  - `ChatPanel` – messages, typing, delete‑own, expiration input
 
 ---
 
-## Deliverables
-1. Complete source code
-2. README with setup instructions and implementation notes
-3. Working demo (open multiple tabs to test)
+## How to test
+
+1. Open two tabs at `http://localhost:3000`.
+2. Type in one tab – the other shows a typing indicator.
+3. Send a message, try deleting your own; add an expiration (ms) and watch it disappear.
+4. Increment/decrement the counter – value and last actor/time stay in sync.
+5. Toggle the theme – other tabs follow instantly.
 
 ---
 
-## Evaluation Criteria
-- Proper use and integration of `react-broadcast-sync`
-- Correct and clean custom hook abstraction
-- Working real-time sync across tabs
-- Well-structured and maintainable code
-- Functional and user-friendly UI
-- Handling of edge cases (e.g., expired messages, tab close)
-- Bonus points for creative features, polish, or great UX
+## Notes
+
+- User identity (`userId`) now persists per browser profile using `localStorage` (`collab_user_id`); opening new tabs shares the same user while each tab still has a unique `tabId` for presence granularity.
+- The hook clears processed messages via `clearReceivedMessages` to avoid reprocessing.
+- Expired messages are pruned every 2s.
+- Presence pings every 5s to refresh `lastActive`.
+- Identity (username) is deterministic from the stable `userId` via a hash (see `randomUsername`).
+- Stale presence cleanup: tabs inactive >30s are pruned (unless it's your own user).
+- Deterministic avatar colors derived from `userId` (see `avatarColorFromUserId`).
+- Focus updates throttled (120ms) to reduce broadcast spam.
+- Feed now includes expiration events (`chat:expire`).
+
+---
